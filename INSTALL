@@ -1,0 +1,51 @@
+# python 2.7.x
+
+#== install ==
+# nginx
+
+# git
+$ sudo aptitude install git
+
+# Mongodb 2.0.4 
+$ sudo aptitude install mongodb
+
+# redis 2.2.2
+$ sudo aptitude install redis-server
+
+# supervisor
+$ sudo aptitude install  supervisor
+
+# gevent require
+$ sudp aptitude install python-dev libevent-dev
+
+# virtualenv
+$ sudo aptitude install python-virtualenv virtualenvwrapper 
+
+# pip requirements.txt in virtualenv
+$ pip install -r requirements.txt
+
+#== setup ==
+#初始化数据库
+$ db/initdb_mongo
+
+#set locale
+$ sudo nano /etc/default/locale
+LANG=zh_CN.UTF-8
+LANGUAGE=zh_CN:zh:en_US:en
+LC_CTYPE="zh_CN.UTF-8"
+LC_NUMERIC=zh_CN.UTF-8
+LC_TIME=zh_CN.UTF-8
+LC_COLLATE="zh_CN.UTF-8"
+LC_MONETARY=zh_CN.UTF-8
+LC_MESSAGES="zh_CN.UTF-8"
+LC_PAPER=zh_CN.UTF-8
+LC_NAME=zh_CN.UTF-8
+LC_ADDRESS=zh_CN.UTF-8
+LC_TELEPHONE=zh_CN.UTF-8
+LC_MEASUREMENT=zh_CN.UTF-8
+LC_IDENTIFICATION=zh_CN.UTF-8
+LC_ALL=
+
+$ sudo locale-gen
+
+
