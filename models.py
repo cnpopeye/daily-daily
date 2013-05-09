@@ -36,6 +36,21 @@ def update_user_evernote(id, username, access_token):
     return rowcount
 
 
+def update_user_guid(id, guid):
+    rowcount = 0
+    _filter = {"id":id}
+    _set = {"guid":guid}
+    res = _MONGO.users.update( _filter, {"$set":_set}, w=1)
+    if res["n"] :
+        rowcount = res["n"]
+    return rowcount
+
+
+def get_user_guid(id):
+    res =  _MONGO.users.find_one( {"id":id},{"guid":1} )
+    guid = res.get("guid",None)
+    return guid
+    
 def get_user_token( id ):
     try:
         res =  _MONGO.users.find_one( {"id":id},

@@ -1,0 +1,10 @@
+1. evernote oauth
+2. create new notebook named "Daily Daily", if not exists.
+3. create new note named "YYYY-MM-DD", if not exists.
+4. append content daily status to note.
+5. connect facebook.
+6. connect twitter.
+7. connect linkedin.
+8. connect instagram.
+9. get status from sns.
+10. append status to note.

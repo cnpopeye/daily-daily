@@ -9,7 +9,7 @@ import os
 import config
 from evernote.api.client import EvernoteClient
 import models
-
+import controller
 '''
 Created on 2013-1-11
 
@@ -80,11 +80,16 @@ class LoginWithEvernote(tornado.web.RequestHandler):
     def _get_user(self, access_token, callback):
         client = _get_evernote_client(access_token)
         user_store = client.get_user_store()
-        callback(access_token, user_store.getUser())
+        callback(client, access_token, user_store.getUser())
         
-    def _on_get_user(self, access_token, user):
-        '''save user info and token'''
+    def _on_get_user(self, client, access_token, user):
+        '''update user and token'''
         models.update_user_evernote(user.id, user.username, access_token)
+        #create notebook
+        guid = models.get_user_guid(user.id)
+        if not guid:
+            guid = controller.create_notebook(client)
+            models.update_user_guid(user.id, guid)
         self.set_secure_cookie("id", str(user.id) )
         self.finish()
     
