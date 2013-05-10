@@ -5,11 +5,8 @@ import tornado.web
 from tornado import httpserver, ioloop
 from tornado.options import define, options
 import os
-
-import config
-from evernote.api.client import EvernoteClient
-import models
-import controller
+import config as conf
+import controller as ctr
 '''
 Created on 2013-1-11
 
@@ -34,30 +31,12 @@ settings = dict(
  )
 
 
-def _get_evernote_client_via_id(id):
-    print id
-    access_token = models.get_user_token(int(id))
-    return _get_evernote_client(access_token)
-
-def _get_evernote_client(access_token = None):
-    if access_token:
-        return EvernoteClient(
-            token=access_token,
-            sandbox=True)
-    else:
-        client = EvernoteClient(
-            consumer_key=config.consumer_key,
-            consumer_secret=config.consumer_secret,
-            sandbox=True # Default: True
-            )
-
-        return client
-    
 class LoginWithEvernote(tornado.web.RequestHandler):
+    "auth evernote"
     @tornado.web.asynchronous
     def get(self):
         user_id = self.get_secure_cookie("id") if self.get_secure_cookie("id") else 0
-        client = _get_evernote_client_via_id( user_id  )
+        client = ctr.get_evernote_client_via_id( user_id  )
         if client.token:
             self._get_user(client.token,
                            self.async_callback(self._on_get_user) )
@@ -72,27 +51,23 @@ class LoginWithEvernote(tornado.web.RequestHandler):
                            self.async_callback(self._on_get_user) )
             return
        
-        request_token = client.get_request_token(config.en_callback)
+        request_token = client.get_request_token(conf.en_callback)
         self.set_secure_cookie('ots',request_token['oauth_token_secret'])
         authorized_url = client.get_authorize_url(request_token)
         self.redirect(authorized_url)
 
     def _get_user(self, access_token, callback):
-        client = _get_evernote_client(access_token)
-        user_store = client.get_user_store()
-        callback(client, access_token, user_store.getUser())
+        callback( access_token)
         
-    def _on_get_user(self, client, access_token, user):
-        '''update user and token'''
-        models.update_user_evernote(user.id, user.username, access_token)
-        #create notebook
-        guid = models.get_user_guid(user.id)
-        if not guid:
-            guid = controller.create_notebook(client)
-            models.update_user_guid(user.id, guid)
+    def _on_get_user(self, access_token):
+        "saving user and set cookie."
+        user = ctr.update_user(access_token)
+        if not user:
+            raise tornado.web.HTTPError(500,"evernote auth failed!")
         self.set_secure_cookie("id", str(user.id) )
-        self.finish()
-    
+        u = dict(id=user.id, uname = user.username)
+        self.finish(u)
+        
 class ConnectFacebook(tornado.web.RequestHandler):
     def get(self):
         pass
