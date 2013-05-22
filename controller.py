@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 import logging
+from datetime import datetime
 import evernote.edam.type.ttypes as Types
 import evernote.edam.error.ttypes as Errors
 from evernote.api.client import EvernoteClient
 import models as m
 import config as conf
+
 
 def update_user(access_token):
     "update or save user"
@@ -83,8 +85,6 @@ def makeNote(authToken, noteStore, noteTitle, noteBody, parentNotebook=None):
 	## Return created note object
 	return note
 
-def append_status(client, status):
-    pass
 
 def get_evernote_client_via_id(id):
     "using user.id get EvernoteClient"
@@ -107,3 +107,81 @@ def get_evernote_client(access_token = None):
         return client
 
 
+def connect_facebook(id, user):
+    return m.update_user_sns(id, user, "facebook")
+
+def connect_twitter(id, user):
+    return m.update_user_sns(id, user, "twitter")
+
+def get_facebook_token(enid):
+    return m.get_facebook_token(enid)
+
+def get_twitter_token(enid):
+    return m.get_twitter_token(enid)
+
+def update_daily_facebook(enid, fbid, data):
+    daily=[]
+    for d in data["data"]:
+        try:
+            _daily = dict(
+                ddid = d["id"],
+                message = d["message"],
+                created_time = datetime.strptime(
+                                  d["created_time"],
+                                  "%Y-%m-%dT%H:%M:%S+0000") )
+        except:
+            continue
+        else:
+            _daily.update(
+                id = enid,
+                sid = fbid,
+                source = "facebook",
+                picture = [d.get("full_picture")],
+                description = d.get("description")
+                )
+        daily.append(_daily)
+    return m.save_daily(daily)
+
+
+def get_since_id(enid, twid):
+    return m.get_since_id(enid, twid)
+
+def get_media(data):
+    "return media url list from entities"
+    medias = []
+    if not data:
+        return None
+    if not data.get("media"):
+        return None
+    for m in data.get("media"):
+        if m.get("media_url"):
+            medias.append(m.get("media_url"))
+    return medias
+
+def update_daily_twitter(enid, twid, data):
+    daily = []
+    for d in data:
+        try:
+            _daily = dict(
+                ddid = d["id"],
+                message = d["text"],
+                created_time = datetime.strptime(
+                                  d["created_at"],
+                                  "%a %b %d %H:%M:%S +0000 %Y") )
+        except:
+            continue
+        else:
+            _daily.update(
+                id = enid,
+                sid = twid,
+                source = "twitter",
+                picture = get_media(d.get("entities") ),
+                description = None
+                )
+        daily.append(_daily)
+
+    return m.save_daily(daily)
+        
+
+def get_user(enid):
+    return m.get_user(enid)

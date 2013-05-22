@@ -1,4 +1,4 @@
-1. evernote oauth
+1. evernote oauth 
 2. create new notebook named "Daily Daily", if not exists.
 3. create new note named "YYYY-MM-DD", if not exists.
 4. append content daily status to note.
