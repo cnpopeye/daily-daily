@@ -1,3 +1,6 @@
 [submodule "evernote"]
 	path = evernote
 	url = git://github.com/evernote/evernote-sdk-python/
+[submodule "tornado_api"]
+	path = tornado_api
+	url = git@github.com:cnpopeye/tornado_api.git

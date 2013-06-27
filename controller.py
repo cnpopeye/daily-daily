@@ -113,11 +113,17 @@ def connect_facebook(id, user):
 def connect_twitter(id, user):
     return m.update_user_sns(id, user, "twitter")
 
+def connect_foursquare(id, user):
+    return m.update_user_sns(id, user, "foursquare")
+
 def get_facebook_token(enid):
     return m.get_facebook_token(enid)
 
 def get_twitter_token(enid):
     return m.get_twitter_token(enid)
+
+def get_foursquare_token(enid):
+    return m.get_sns_token(enid, "foursquare")
 
 def update_daily_facebook(enid, fbid, data):
     daily=[]
@@ -181,7 +187,45 @@ def update_daily_twitter(enid, twid, data):
         daily.append(_daily)
 
     return m.save_daily(daily)
-        
+
+def update_daily_foursuare(enid, foursquare_id, data):
+    daily = []
+    for d in data.get("response").get("checkins"):
+        try:
+            _daily = dict(ddid = d["id"],
+                      created_at =  datetime.datetime.fromtimestamp(
+                                               d["createdAt"]),
+                      message = d["shot"],
+                      venue = d["venue"])
+        except:
+            continue
+        else:
+            _daily.update(
+                id = enid,
+                sid = foursquare_id,
+                picture = get_picture(d.get("photos").get("items")),
+                source = "foursquare",
+                description = None
+                )
+        daily.append(_daily)
+
+    return m.save_daily(daily)
+
+
+def get_picture(data):
+    photos = []
+    for p in data:
+        photos.append("%swidth%s%s" %
+                ( p["prefix"], p["width"], p["suffix"] )
+             )
+    return photos
+
 
 def get_user(enid):
     return m.get_user(enid)
+
+
+
+
+
+

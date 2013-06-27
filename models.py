@@ -84,6 +84,31 @@ def get_twitter_token(enid):
     return twid, access_token
     
 
+def get_foursquare_token(enid):
+    try:
+        res =  _MONGO.users.find_one( {"id":enid},
+                                    {"foursquare":1} )
+        access_token = res['forusquare']["access_token"]
+        sqid = res['foursquare']["id"]
+    except:
+        access_token = None
+        sqid = None
+    return sqid, access_token
+    
+def get_sns_token(enid, source):
+    ''''get token filter with sns source
+    return sns id and access_token'''
+    try:
+        res =  _MONGO.users.find_one( {"id":enid},
+                                    {source:1} )
+        access_token = res[source]["access_token"]
+        _id = res[source]["id"]
+    except:
+        access_token = None
+        _id = None
+    return _id, access_token
+    
+
 def get_user(enid):
     try:
         res =  _MONGO.users.find_one( {"id":enid})

@@ -7,6 +7,7 @@ import tornado.web
 import tornado.auth
 from tornado import httpserver, ioloop
 from tornado.options import define, options
+from tornado_api import FoursquareMixin
 import config as conf
 import controller as ctr
 import utils as u
@@ -33,6 +34,7 @@ settings = dict(
     twitter_consumer_key = conf.twitter_consumer_key,
     twitter_consumer_secret = conf.twitter_consumer_secret,
  )
+
 
 class BaseHandler( tornado.web.RequestHandler ):
     def get_current_user( self ):
@@ -129,10 +131,39 @@ class ConnectTwitter(BaseHandler, tornado.auth.TwitterMixin):
         self.finish(user)
 
 
-        
-class ConnectLinkedin(tornado.web.RequestHandler):
+class ConnectFoursquare(BaseHandler, FoursquareMixin):
+    @tornado.web.asynchronous
     def get(self):
-        pass
+        enid = self.get_current_user()
+        if not enid:
+            self.redirect("/login")
+
+        my_url = (self.request.protocol + "://" + self.request.host +
+                  "/connect/foursquare")
+
+        if self.get_argument("code", False):
+            self.get_authenticated_user(
+                redirect_uri=my_url,
+                client_id=conf.foursquare_client_id,
+                client_secret=conf.foursquare_client_secret,
+                code=self.get_argument("code"),
+                callback=self.async_callback(self._on_auth, enid)
+                )
+            return
+
+        self.authorize_redirect(
+            redirect_uri=my_url,
+            client_id=conf.foursquare_client_id
+        )
+
+    def _on_auth(self, enid, user):
+        if not user:
+            raise tornado.web.HTTPError(500, "Foursquare auth failed")
+        if not ctr.connect_foursquare(int(enid), user):
+            raise tornado.web.HTTPError(500, "save foursquare failed.")
+
+        self.finish(user)
+
 
 class ConnectInstagram(tornado.web.RequestHandler):
     def get(self):
@@ -199,12 +230,44 @@ class DailyTwitter(BaseHandler, tornado.auth.TwitterMixin):
             ctr.update_daily_twitter(enid, twid, daily)
         self.finish()
 
+
+class Dailyfoursquare(BaseHandler, FoursquareMixin):
+    @tornado.web.asynchronous
+    def get(self, enid, special_timestamp):
+        _enid = int(enid)
+        foursquare_id, access_token = ctr.get_foursquare_token(_enid)
+        if not foursquare_id or not access_token:
+            return
+        since, until = u.get_since_until(int(special_timestamp) )
+
+        params = dict(
+                limit=200,
+                sort="oldestfirst",
+                afterTimestamp = since,
+                beforeTimestamp = until,
+                )
+        
+        self.foursquare_request(
+                path="users/self/checkins",
+                callback=self.async_callback(self._on_get_daily,
+                                             enid,
+                                             foursquare_id
+                                             ),
+                access_token=access_token,
+                **params
+                )
+
+    def _on_get_daily(self, enid, foursquare_id, daily):
+        if daily:
+            ctr.update_daily_foursuare(enid, foursquare_id, daily)
+        self.finish()
+
         
 urls = [
         ( r"/login", LoginWithEvernote),
         ( r"/connect/facebook", ConnectFacebook ),
         ( r"/connect/twitter", ConnectTwitter ),
-        ( r"/connect/linkedin", ConnectLinkedin ),
+        ( r"/connect/foursquare", ConnectFoursquare ),
         ( r"/connect/instagram", ConnectInstagram ),
         ( r"/daily/facebook/(\d+)/(\d+)", DailyFacebook ),
         ( r"/daily/twitter/(\d+)", DailyTwitter ),
@@ -226,3 +289,5 @@ if __name__ == '__main__':
     print "Starting server..."
     main()
     print "Started."
+
+
